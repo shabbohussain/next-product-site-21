@@ -1,20 +1,24 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY); // Make sure this is defined in .env
 
-export async function sendOrderConfirmationEmail(order: { customer_email: string; amount: number; order_id: string }) {
+export async function sendPaymentConfirmationEmail(to: string, customerName: string, amount: string) {
   try {
-    await resend.emails.send({
-      from: 'Your Shop <shabbohussain21@gmail.com>',
-      to: order.customer_email,
-      subject: 'Your Order Confirmation',
-      html: `
-        <h2>Thank you for your order shabbo!</h2>
-        <p>Order ID: ${order.order_id}</p>
-        <p>Amount Paid: ₹${(order.amount / 100).toFixed(2)}</p>
-      `,
+    const { data, error } = await resend.emails.send({
+      from: 'Your Store <onboarding@resend.dev>', // use valid verified or test email
+      to: 'shabbohussain21@gmail.com',
+      subject: 'Payment Successful!',
+      html: `<p>Hi ${customerName},</p><p>Your payment of <strong>${amount}</strong> was successful.</p>`,
     });
-  } catch (error) {
-    console.error('Email send failed:', error);
+
+    if (error) {
+      console.error('❌ Resend email error:', error);
+    } else {
+      console.log('✅ Email sent:', data);
+    }
+
+    return data;
+  } catch (err) {
+    console.error('❌ Error sending email:', err);
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import Stripe from 'stripe';
 import { buffer } from 'micro';
-import { sendOrderConfirmationEmail } from '../lib/email'; // Adjust the path as necessary
+import { sendPaymentConfirmationEmail } from '../lib/email'; // Adjust the path as necessary
 
 export const config = {
   api: {
@@ -27,17 +27,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
+    console.log('✅ Payment completed webhook triggered');
 
-    // Save order to DB (mock example)
-    const order = {
-      customer_email: session.customer_email || '', // Provide a default value
-      amount: session.amount_total || 0, // Provide a default value
-      order_id: session.id,
-    };
+    const session = event.data.object as Stripe.Checkout.Session;
 
-    // Send email
-    await sendOrderConfirmationEmail(order);
+    const customerEmail = session.customer_details?.email;
+    const customerName = session.customer_details?.name || 'Customer';
+    const amount = (session.amount_total! / 100).toFixed(2);
+
+    console.log('Sending email to:', customerEmail);
+
+    if (customerEmail) {
+      await sendPaymentConfirmationEmail(customerEmail, customerName, `$${amount}`);
+    } else {
+      console.error('❌ Customer email is missing');
+    }
+
+    console.log('✅ Email sent successfully');
   }
 
   return new Response('OK', { status: 200 });
